@@ -29,10 +29,11 @@ import (
 //
 // Usage:
 //
-//     csv-image -filepath path/to/csv-file.csv
+//     csv-image -csv path/to/csv-file.csv
 //
 func main() {
-	filepath := flag.String("filepath", "./test.csv", "Path to CSV to import")
+	filepath := flag.String("csv", "./test.csv", "Path to CSV to import")
+	outputDir := flag.String("output", "./output", "Directory to write images to")
 	flag.Parse()
 
 	reader, err := parseCSV(*filepath)
@@ -49,11 +50,11 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		filename, data := record[0], record[1]
-		base64ToImage(data, filename)
+		id, data := record[0], record[1]
+		base64ToImage(data, id, *outputDir)
 	}
 
-	fmt.Println("\nDone! Check ./output for image output.")
+	fmt.Printf("\nDone! Check %s for image output.\n", *outputDir)
 }
 
 // Creates a CSV reader from a CSV file at a specified filepath.
@@ -75,29 +76,38 @@ func parseCSV(filepath string) (*csv.Reader, error) {
 
 // Attempts to parse a base-64 `data` string and encode it into an image, and writes
 // the image to a file. Currently handles JPEG and PNG encoding.
-func base64ToImage(data, id string) {
+func base64ToImage(data, id, outputDir string) {
 	fmt.Printf("Attempting to decode data with ID: %s...\n", id)
+
 	reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(data))
 	image, formatString, err := image.Decode(reader)
 	fmt.Printf("Format: %s\n", formatString)
 	if err != nil {
 		fmt.Printf("Parsing error: %s\n", err)
-		dumpData(data, id)
+		dumpData(data, id, outputDir)
 		return
 	}
 
 	switch formatString {
 	case "jpeg":
-		encodeToJPEG(image, data, id)
+		encodeToJPEG(image, data, id, outputDir)
 	default:
-		encodeToPNG(image, data, id)
+		encodeToPNG(image, data, id, outputDir)
 	}
 }
 
 // Encodes image data into a PNG and writes it to `./output/<filename>.png`
-func encodeToPNG(image image.Image, data, filename string) {
-	pngFilename := fmt.Sprintf("./output/%s.png", filename)
+func encodeToPNG(image image.Image, data, filename, outputDir string) {
+	pngFilename := fmt.Sprintf("%s/%s.png", outputDir, filename)
 	fmt.Printf("Writing to '%s'...\n", pngFilename)
+
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		err := os.Mkdir(outputDir, 0777)
+		if err != nil {
+			fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
+			log.Fatalln("Couldn't write image file!")
+		}
+	}
 
 	f, err := os.OpenFile(pngFilename, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
@@ -109,7 +119,7 @@ func encodeToPNG(image image.Image, data, filename string) {
 	err = png.Encode(f, image)
 	if err != nil {
 		fmt.Printf("Parsing error: %s\n", err)
-		dumpData(data, filename)
+		dumpData(data, filename, outputDir)
 		return
 	}
 
@@ -117,9 +127,16 @@ func encodeToPNG(image image.Image, data, filename string) {
 }
 
 // Encodes image datainto a JPEG and writes it to './output/<filename>.jpeg'.
-func encodeToJPEG(image image.Image, data, filename string) {
-	jpegFileName := fmt.Sprintf("./output/%s.jpeg", filename)
+func encodeToJPEG(image image.Image, data, filename, outputDir string) {
+	jpegFileName := fmt.Sprintf("%s/%s.jpeg", outputDir, filename)
 	fmt.Printf("Writing to '%s'...\n", jpegFileName)
+
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		if err != nil {
+			fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
+			log.Fatalln("Couldn't write image file!")
+		}
+	}
 
 	f, err := os.OpenFile(jpegFileName, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
@@ -131,7 +148,7 @@ func encodeToJPEG(image image.Image, data, filename string) {
 	err = jpeg.Encode(f, image, &jpeg.Options{Quality: 100})
 	if err != nil {
 		fmt.Printf("Parsing error: %s\n", err)
-		dumpData(data, filename)
+		dumpData(data, filename, outputDir)
 		return
 	}
 
@@ -139,9 +156,16 @@ func encodeToJPEG(image image.Image, data, filename string) {
 }
 
 // Writes `data` to './output/<filename>.txt'.
-func dumpData(data, filename string) {
-	dumpFileName := fmt.Sprintf("./output/%s.txt", filename)
+func dumpData(data, filename, outputDir string) {
+	dumpFileName := fmt.Sprintf("%s/%s.txt", filename)
 	fmt.Printf("Dumping data to '%s' for debugging...\n\n", dumpFileName)
+
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		if err != nil {
+			fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
+			log.Fatalln("Couldn't write image file!")
+		}
+	}
 
 	f, err := os.OpenFile(dumpFileName, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
