@@ -1,0 +1,5 @@
+csv-jpeg
+*.csv
+output/**.jpeg
+output/**.txt
+.DS_Store
