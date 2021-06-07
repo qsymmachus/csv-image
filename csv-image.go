@@ -101,12 +101,10 @@ func encodeToPNG(image image.Image, data, filename, outputDir string) {
 	pngFilename := fmt.Sprintf("%s/%s.png", outputDir, filename)
 	fmt.Printf("Writing to '%s'...\n", pngFilename)
 
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		err := os.Mkdir(outputDir, 0777)
-		if err != nil {
-			fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
-			log.Fatalln("Couldn't write image file!")
-		}
+	err := os.MkdirAll(outputDir, 0777)
+	if err != nil {
+		fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
+		log.Fatalln("Couldn't write image file!")
 	}
 
 	f, err := os.OpenFile(pngFilename, os.O_WRONLY|os.O_CREATE, 0777)
@@ -131,11 +129,10 @@ func encodeToJPEG(image image.Image, data, filename, outputDir string) {
 	jpegFileName := fmt.Sprintf("%s/%s.jpeg", outputDir, filename)
 	fmt.Printf("Writing to '%s'...\n", jpegFileName)
 
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		if err != nil {
-			fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
-			log.Fatalln("Couldn't write image file!")
-		}
+	err := os.MkdirAll(outputDir, 0777)
+	if err != nil {
+		fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
+		log.Fatalln("Couldn't write image file!")
 	}
 
 	f, err := os.OpenFile(jpegFileName, os.O_WRONLY|os.O_CREATE, 0777)
@@ -157,14 +154,13 @@ func encodeToJPEG(image image.Image, data, filename, outputDir string) {
 
 // Writes `data` to './output/<filename>.txt'.
 func dumpData(data, filename, outputDir string) {
-	dumpFileName := fmt.Sprintf("%s/%s.txt", filename)
+	dumpFileName := fmt.Sprintf("%s/%s.txt", outputDir, filename)
 	fmt.Printf("Dumping data to '%s' for debugging...\n\n", dumpFileName)
 
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		if err != nil {
-			fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
-			log.Fatalln("Couldn't write image file!")
-		}
+	err := os.MkdirAll(outputDir, 0777)
+	if err != nil {
+		fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
+		log.Fatalln("Couldn't write image file!")
 	}
 
 	f, err := os.OpenFile(dumpFileName, os.O_WRONLY|os.O_CREATE, 0777)
