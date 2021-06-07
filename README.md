@@ -18,7 +18,7 @@ It assumes the CSV has two fields, a unique identifier and a base-64 string:
 
 ## Installation
 
-Assuming you have Go installed, install this program with `go get`:
+Assuming you have [Go installed](https://golang.org/doc/install), install this program with `go get`:
 
 ```
 go get github.com/qsymmachus/csv-image
