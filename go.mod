@@ -1,3 +1,3 @@
-module github.com/qsymmachus/csv-jpeg
+module github.com/qsymmachus/csv-image
 
 go 1.16

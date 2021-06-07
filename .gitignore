@@ -1,5 +1,5 @@
-csv-jpeg
+csv-image
 *.csv
-output/**.jpeg
-output/**.txt
+output/**
 .DS_Store
+
