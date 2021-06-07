@@ -98,7 +98,7 @@ func base64toJpg(data, filename string) error {
 		dumpData(data, filename)
 		return err
 	}
-	fmt.Printf("Created '%s'\n", filename)
+	fmt.Printf("Created '%s'\n", jpegFileName)
 
 	return nil
 }
