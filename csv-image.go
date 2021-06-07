@@ -102,7 +102,7 @@ func encodeToPNG(image image.Image, data, filename string) {
 	f, err := os.OpenFile(pngFilename, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		fmt.Printf("Failed to write file '%s': %s\n", pngFilename, err)
-		return
+		log.Fatalln("Couldn't write image file!")
 	}
 	defer f.Close()
 
@@ -124,7 +124,7 @@ func encodeToJPEG(image image.Image, data, filename string) {
 	f, err := os.OpenFile(jpegFileName, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		fmt.Printf("Failed to write file '%s': %s\n", jpegFileName, err)
-		return
+		log.Fatalln("Couldn't write image file!")
 	}
 	defer f.Close()
 
