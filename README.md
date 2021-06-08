@@ -36,7 +36,7 @@ It will attempt to
 
 1. Parse each row of the `-csv` file, extracting the identifier and data.
 1. Parse the base-64 data.
-1. Encode teh data as either a PNG or JPEG image.
+1. Encode the data as either a PNG or JPEG image.
 1. Write the image to the specified `-output` directory, using the unique identifier as the file name, plus a file extension.
 
 If an error is encountered attempting to parse the data, it will dump the base-64 string to a '.txt' file instead to help with debugging.
