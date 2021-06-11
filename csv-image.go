@@ -13,6 +13,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 )
 
 // Attempts to parse a CSV file containing base-64 encoded image data.
@@ -41,6 +42,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	var wg sync.WaitGroup
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -51,8 +53,10 @@ func main() {
 		}
 
 		id, data := record[0], record[1]
-		base64ToImage(data, id, *outputDir)
+		wg.Add(1)
+		go base64ToImage(data, id, *outputDir, &wg)
 	}
+	wg.Wait()
 
 	fmt.Printf("\nDone! Check %s for image output.\n", *outputDir)
 }
@@ -76,12 +80,14 @@ func parseCSV(filepath string) (*csv.Reader, error) {
 
 // Attempts to parse a base-64 `data` string and encode it into an image, and writes
 // the image to a file. Currently handles JPEG and PNG encoding.
-func base64ToImage(data, id, outputDir string) {
-	fmt.Printf("Attempting to decode data with ID: %s...\n", id)
+func base64ToImage(data, id, outputDir string, wg *sync.WaitGroup) {
+	var output string
+	defer wg.Done()
+	output = output + fmt.Sprintf("Attempting to decode data with ID: %s...\n", id)
 
 	reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(data))
 	image, formatString, err := image.Decode(reader)
-	fmt.Printf("Format: %s\n", formatString)
+	output = output + fmt.Sprintf("Format: %s\n", formatString)
 	if err != nil {
 		fmt.Printf("Parsing error: %s\n", err)
 		dumpData(data, id, outputDir)
@@ -90,87 +96,98 @@ func base64ToImage(data, id, outputDir string) {
 
 	switch formatString {
 	case "jpeg":
-		encodeToJPEG(image, data, id, outputDir)
+		output = output + encodeToJPEG(image, data, id, outputDir)
 	case "png":
-		encodeToPNG(image, data, id, outputDir)
+		output = output + encodeToPNG(image, data, id, outputDir)
 	default:
-		fmt.Printf("Unrecognized image format: %s\n", formatString)
+		output = output + fmt.Sprintf("Unrecognized image format: %s\n", formatString)
 		dumpData(data, id, outputDir)
 	}
+
+	fmt.Printf(output)
 }
 
 // Encodes image data into a PNG and writes it to `./output/<filename>.png`
-func encodeToPNG(image image.Image, data, filename, outputDir string) {
+func encodeToPNG(image image.Image, data, filename, outputDir string) (output string) {
 	pngFilename := fmt.Sprintf("%s/%s.png", outputDir, filename)
-	fmt.Printf("Writing to '%s'...\n", pngFilename)
+	output = output + fmt.Sprintf("Writing to '%s'...\n", pngFilename)
 
 	err := os.MkdirAll(outputDir, 0777)
 	if err != nil {
-		fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
-		log.Fatalln("Couldn't write image file!")
+		output = output + fmt.Sprintf("Failed create output directory '%s': %s\n", outputDir, err)
+		return output
 	}
 
 	f, err := os.OpenFile(pngFilename, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
-		fmt.Printf("Failed to write file '%s': %s\n", pngFilename, err)
-		log.Fatalln("Couldn't write image file!")
+		output = output + fmt.Sprintf("Failed to write file '%s': %s\n", pngFilename, err)
+		return output
 	}
 	defer f.Close()
 
 	err = png.Encode(f, image)
 	if err != nil {
-		fmt.Printf("Parsing error: %s\n", err)
+		output = output + fmt.Sprintf("Parsing error: %s\n", err)
 		dumpData(data, filename, outputDir)
-		return
+		return output
 	}
 
-	fmt.Printf("Created '%s'\n\n", pngFilename)
+	output = output + fmt.Sprintf("Created '%s'\n\n", pngFilename)
+	return output
 }
 
 // Encodes image datainto a JPEG and writes it to './output/<filename>.jpeg'.
-func encodeToJPEG(image image.Image, data, filename, outputDir string) {
+func encodeToJPEG(image image.Image, data, filename, outputDir string) (output string) {
 	jpegFileName := fmt.Sprintf("%s/%s.jpeg", outputDir, filename)
-	fmt.Printf("Writing to '%s'...\n", jpegFileName)
+	output = output + fmt.Sprintf("Writing to '%s'...\n", jpegFileName)
 
 	err := os.MkdirAll(outputDir, 0777)
 	if err != nil {
-		fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
-		log.Fatalln("Couldn't write image file!")
+		output = output + fmt.Sprintf("Failed create output directory '%s': %s\n", outputDir, err)
+		return output
 	}
 
 	f, err := os.OpenFile(jpegFileName, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
-		fmt.Printf("Failed to write file '%s': %s\n", jpegFileName, err)
-		log.Fatalln("Couldn't write image file!")
+		output = output + fmt.Sprintf("Failed to write file '%s': %s\n", jpegFileName, err)
+		return output
 	}
 	defer f.Close()
 
 	err = jpeg.Encode(f, image, &jpeg.Options{Quality: 100})
 	if err != nil {
-		fmt.Printf("Parsing error: %s\n", err)
+		output = output + fmt.Sprintf("Parsing error: %s\n", err)
 		dumpData(data, filename, outputDir)
-		return
+		return output
 	}
 
-	fmt.Printf("Created '%s'\n\n", jpegFileName)
+	output = output + fmt.Sprintf("Created '%s'\n\n", jpegFileName)
+	return output
 }
 
 // Writes `data` to './output/<filename>.txt'.
-func dumpData(data, filename, outputDir string) {
+func dumpData(data, filename, outputDir string) (output string) {
 	dumpFileName := fmt.Sprintf("%s/%s.txt", outputDir, filename)
-	fmt.Printf("Dumping data to '%s' for debugging...\n\n", dumpFileName)
+	output = output + fmt.Sprintf("Dumping data to '%s' for debugging...\n\n", dumpFileName)
 
 	err := os.MkdirAll(outputDir, 0777)
 	if err != nil {
-		fmt.Printf("Failed create output directory '%s': %s\n", outputDir, err)
-		log.Fatalln("Couldn't write image file!")
+		output = output + fmt.Sprintf("Failed create output directory '%s': %s\n", outputDir, err)
+		return output
 	}
 
 	f, err := os.OpenFile(dumpFileName, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
-		log.Fatalln(err)
+		output = output + fmt.Sprintf("Failed to write to dump file: %s", err)
+		return output
 	}
 	defer f.Close()
 
-	f.WriteString(data + "\n")
+	_, err = f.WriteString(data + "\n")
+	if err != nil {
+		output = output + fmt.Sprintf("Failed to write to dump file: %s", err)
+		return output
+	}
+
+	return output
 }
