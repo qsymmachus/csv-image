@@ -91,8 +91,11 @@ func base64ToImage(data, id, outputDir string) {
 	switch formatString {
 	case "jpeg":
 		encodeToJPEG(image, data, id, outputDir)
-	default:
+	case "png":
 		encodeToPNG(image, data, id, outputDir)
+	default:
+		fmt.Printf("Unrecognized image format: %s\n", formatString)
+		dumpData(data, id, outputDir)
 	}
 }
 
@@ -121,7 +124,7 @@ func encodeToPNG(image image.Image, data, filename, outputDir string) {
 		return
 	}
 
-	fmt.Printf("Created '%s'\n", pngFilename)
+	fmt.Printf("Created '%s'\n\n", pngFilename)
 }
 
 // Encodes image datainto a JPEG and writes it to './output/<filename>.jpeg'.
